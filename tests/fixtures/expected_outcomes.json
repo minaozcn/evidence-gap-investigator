@@ -1,0 +1,166 @@
+{
+  "_about": "Expected investigation outcomes for evaluation. Lives outside the database and outside the investigator package; the agent must never read this file. Evidence is referenced by (source_type, source_name, evidence_kind) because database ids are auto-generated.",
+  "seed": {
+    "incident_count": 8,
+    "evidence_count": 41,
+    "evidence_per_incident": {
+      "INC-1001": 4,
+      "INC-1002": 4,
+      "INC-1003": 6,
+      "INC-1004": 9,
+      "INC-1005": 5,
+      "INC-1006": 4,
+      "INC-1007": 3,
+      "INC-1008": 6
+    },
+    "evidence_kinds": {
+      "observation": 35,
+      "negative_finding": 4,
+      "data_gap": 2
+    },
+    "open_incidents": [
+      "INC-1003",
+      "INC-1004",
+      "INC-1008"
+    ],
+    "followup_1004_adds": 1
+  },
+  "investigations": {
+    "INC-1003": {
+      "expected_verdict": "conclusive",
+      "expected_root_cause_category": "config_change",
+      "expected_root_cause_summary": "Release v2.4.0 lowered DB_POOL_MAX from 50 to 10, exhausting the connection pool.",
+      "similar_history": [
+        "INC-1001"
+      ],
+      "misleading_history": [
+        "INC-1005"
+      ],
+      "should_weaken": [
+        "database overload (db-primary CPU and connections normal)",
+        "payment provider outage (no upstream timeouts)"
+      ]
+    },
+    "INC-1004": {
+      "expected_verdict": "inconclusive",
+      "max_confidence_band": "medium",
+      "misleading_history": [
+        "INC-1002"
+      ],
+      "must_not_rule_out": [
+        "redis memory exhaustion / eviction",
+        "slow redis server commands"
+      ],
+      "reason_must_not_rule_out": "An empty SLOWLOG and a single 41% memory sample only weaken these hypotheses; they do not prove Redis healthy.",
+      "data_gap_must_not_be_cited_as_support_or_contradiction": [
+        {
+          "source_type": "log",
+          "source_name": "auth-service",
+          "evidence_kind": "data_gap"
+        },
+        {
+          "source_type": "metric",
+          "source_name": "redis-server",
+          "evidence_kind": "data_gap"
+        }
+      ],
+      "min_next_checks_matched": 2,
+      "after_followup_1004": "The single-node / single-pod hypothesis should gain confidence; the cause on auth-7 is still unknown, so a fully conclusive verdict is not expected.",
+      "redis_hypothesis_keywords": [
+        "redis"
+      ],
+      "expected_next_checks": [
+        {
+          "label": "recover the missing auth-service logs for 06:12-06:35 UTC",
+          "all_of": [
+            [
+              "log"
+            ],
+            [
+              "auth",
+              "missing",
+              "delayed",
+              "gap",
+              "06:1",
+              "06:2",
+              "06:3"
+            ]
+          ]
+        },
+        {
+          "label": "per-pod / per-node 5xx distribution for auth-service",
+          "all_of": [
+            [
+              "pod",
+              "node",
+              "backend",
+              "instance",
+              "replica",
+              "host"
+            ],
+            [
+              "per-pod",
+              "per pod",
+              "per-node",
+              "per node",
+              "per backend",
+              "per-backend",
+              "per instance",
+              "per-instance",
+              "per host",
+              "per-host",
+              "by pod",
+              "by node",
+              "each pod",
+              "each node",
+              "which pod",
+              "which node",
+              "single pod",
+              "single node",
+              "breakdown",
+              "distribution"
+            ]
+          ]
+        },
+        {
+          "label": "redis server-side latency or INFO stats (evicted_keys) for 06:10-06:40 UTC",
+          "all_of": [
+            [
+              "redis"
+            ],
+            [
+              "latency",
+              "info",
+              "evict",
+              "memory",
+              "slowlog",
+              "server-side",
+              "server side"
+            ]
+          ]
+        },
+        {
+          "label": "network / DNS data between auth-service and redis",
+          "all_of": [
+            [
+              "network",
+              "dns",
+              "tcp",
+              "packet",
+              "retransmit",
+              "connectivity",
+              "resolver"
+            ]
+          ]
+        }
+      ],
+      "_keyword_matching_note": "A next_check matches an expected item when, for every group in all_of, its description+why (lower-cased) contains at least one keyword of that group. Each next_check is credited to at most one expected item (one-to-one matching). Substring matching: may give false positives (keyword used in another sense) and false negatives (synonyms not listed)."
+    },
+    "INC-1008": {
+      "expected_verdict": "conclusive",
+      "expected_root_cause_category": "expired_credential",
+      "expected_root_cause_summary": "The payment provider API key pp-live-key-03 expired at 02:00:00 UTC and no newer secret exists, so every call returned 401.",
+      "distractor": "worker-2 disk usage warning (active since 01:20, before failures began; no disk errors in logs)"
+    }
+  }
+}
